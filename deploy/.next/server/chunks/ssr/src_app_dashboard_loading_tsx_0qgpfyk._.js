@@ -1,3 +1,0 @@
-module.exports=[60411,a=>{"use strict";var b=a.i(7997);a.s(["default",0,function(){return(0,b.jsxs)("div",{className:"max-w-6xl mx-auto space-y-6 animate-pulse",children:[(0,b.jsx)("div",{className:"h-8 bg-gray-100 rounded-xl w-48"}),(0,b.jsx)("div",{className:"grid grid-cols-2 md:grid-cols-4 gap-4",children:Array.from({length:4}).map((a,c)=>(0,b.jsx)("div",{className:"h-28 bg-gray-100 rounded-2xl"},c))}),(0,b.jsx)("div",{className:"h-20 bg-gray-100 rounded-2xl"}),(0,b.jsx)("div",{className:"grid md:grid-cols-4 gap-4",children:Array.from({length:4}).map((a,c)=>(0,b.jsx)("div",{className:"h-40 bg-gray-100 rounded-2xl"},c))})]})}])},83835,a=>{a.n(a.i(60411))}];
-
-//# sourceMappingURL=src_app_dashboard_loading_tsx_0qgpfyk._.js.map

@@ -1,3 +1,0 @@
-{
-  "/api/invoices/[id]/submit/route": "app/api/invoices/[id]/submit/route.js"
-}
