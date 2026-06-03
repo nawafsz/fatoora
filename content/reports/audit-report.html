@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقرير الفحص الشامل - مشروع فاتورة</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans Arabic', sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    line-height: 1.7;
+    padding: 0;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #0d2818 0%, #1a5632 50%, #2d8a4e 100%);
+    color: white;
+    padding: 60px 0 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  .header h1 {
+    font-size: 2.5em;
+    font-weight: 900;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .header p {
+    font-size: 1.1em;
+    opacity: 0.9;
+    margin-top: 10px;
+    position: relative;
+    z-index: 1;
+  }
+  .header .meta {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+  }
+  .header .meta span {
+    background: rgba(255,255,255,0.12);
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    backdrop-filter: blur(5px);
+  }
+
+  /* Stats Bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: -30px auto 30px;
+    padding: 0 20px;
+    max-width: 1100px;
+    position: relative;
+    z-index: 2;
+  }
+  .stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: transform 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-3px); }
+  .stat-card .number {
+    font-size: 2em;
+    font-weight: 900;
+  }
+  .stat-card .label {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 5px;
+  }
+  .stat-card.critical .number { color: #dc2626; }
+  .stat-card.high .number { color: #ea580c; }
+  .stat-card.medium .number { color: #ca8a04; }
+  .stat-card.low .number { color: #6b7280; }
+  .stat-card.good .number { color: #16a34a; }
+  .stat-card.total .number { color: #1a5632; }
+
+  /* Sections */
+  .section {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .section h2 {
+    font-size: 1.5em;
+    font-weight: 800;
+    color: #0d2818;
+    border-bottom: 3px solid #2d8a4e;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section h3 {
+    font-size: 1.15em;
+    font-weight: 700;
+    color: #1a5632;
+    margin: 20px 0 10px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 0.9em;
+  }
+  th {
+    background: #f8faf9;
+    color: #0d2818;
+    font-weight: 700;
+    padding: 12px 14px;
+    text-align: right;
+    border-bottom: 2px solid #2d8a4e;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+  tr:hover td { background: #f8faf9; }
+
+  /* Severity badges */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+  }
+  .badge.critical { background: #fef2f2; color: #dc2626; }
+  .badge.high { background: #fff7ed; color: #ea580c; }
+  .badge.medium { background: #fefce8; color: #ca8a04; }
+  .badge.low { background: #f3f4f6; color: #6b7280; }
+  .badge.good { background: #f0fdf4; color: #16a34a; }
+  .badge.safe { background: #f0fdf4; color: #16a34a; }
+  .badge.warning { background: #fefce8; color: #ca8a04; }
+
+  /* Progress bars */
+  .progress-bar {
+    height: 24px;
+    background: #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 5px 0;
+    position: relative;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    border-radius: 12px;
+    transition: width 1s ease;
+  }
+  .progress-bar .fill.green { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .progress-bar .fill.orange { background: linear-gradient(90deg, #ea580c, #f97316); }
+  .progress-bar .fill.red { background: linear-gradient(90deg, #dc2626, #ef4444); }
+  .progress-bar .fill.gray { background: linear-gradient(90deg, #6b7280, #9ca3af); }
+  .progress-bar .label {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75em;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+
+  /* Vulnerability card */
+  .vuln-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+  .vuln-card .vuln-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .vuln-card .vuln-title { font-weight: 700; }
+  .vuln-card .vuln-location {
+    font-family: monospace;
+    font-size: 0.85em;
+    color: #6b7280;
+    direction: ltr;
+    text-align: left;
+  }
+  .vuln-card .vuln-desc { font-size: 0.9em; color: #4b5563; }
+
+  /* Findings list */
+  .findings-list { list-style: none; }
+  .findings-list li {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .findings-list li:last-child { border-bottom: none; }
+  .findings-list .icon { font-size: 1.2em; flex-shrink: 0; }
+  .findings-list .content { flex: 1; }
+  .findings-list .title { font-weight: 600; }
+  .findings-list .desc { font-size: 0.85em; color: #6b7280; }
+
+  /* Strength list */
+  .strength-list { list-style: none; }
+  .strength-list li {
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95em;
+  }
+  .strength-list .check { color: #16a34a; font-weight: 700; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1.8em; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Float */
+  .float-left { float: left; direction: ltr; }
+  .text-center { text-align: center; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 30px;
+    color: #9ca3af;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>📋 تقرير الفحص الشامل</h1>
+  <p>مشروع فاتورة — الفوترة الإلكترونية المتوافقة مع ZATCA</p>
+  <div class="meta">
+    <span>📅 2 يونيو 2026</span>
+    <span>📁 86 ملفًا</span>
+    <span>🔗 56 API endpoint</span>
+    <span>✅ 0 خطأ في البناء</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-card critical">
+    <div class="number">2</div>
+    <div class="label">🔴 ثغرات حرجة</div>
+  </div>
+  <div class="stat-card high">
+    <div class="number">5</div>
+    <div class="label">🟠 ثغرات عالية</div>
+  </div>
+  <div class="stat-card medium">
+    <div class="number">15</div>
+    <div class="label">🟡 ثغرات متوسطة</div>
+  </div>
+  <div class="stat-card low">
+    <div class="number">8</div>
+    <div class="label">⚪ ثغرات منخفضة</div>
+  </div>
+  <div class="stat-card total">
+    <div class="number">30</div>
+    <div class="label">📊 إجمالي المشاكل</div>
+  </div>
+</div>
+
+<!-- SCORE -->
+<div class="section">
+  <h2>📈 تقييم الأمان العام</h2>
+  <div class="grid-2">
+    <div>
+      <p style="margin-bottom:5px;"><strong>الحماية العامة</strong></p>
+      <div class="progress-bar">
+        <div class="fill green" style="width:82%"></div>
+        <span class="label">82%</span>
+      </div>
+    </div>
+    <div>
+      <p style="margin-bottom:5px;"><strong>جاهزية النشر</strong></p>
+      <div class="progress-bar">
+        <div class="fill orange" style="width:55%"></div>
+        <span class="label">55%</span>
+      </div>
+    </div>
+  </div>
+  <div class="grid-3" style="margin-top:20px;">
+    <div>
+      <p style="margin-bottom:5px;">✅ صفحات 404</p>
+      <div class="progress-bar"><div class="fill green" style="width:100%"></div><span class="label">0</span></div>
+    </div>
+    <div>
+      <p style="margin-bottom:5px;">✅ روابط معطلة</p>
+      <div class="progress-bar"><div class="fill green" style="width:100%"></div><span class="label">0</span></div>
+    </div>
+    <div>
+      <p style="margin-bottom:5px;">✅ API غير محمية</p>
+      <div class="progress-bar"><div class="fill green" style="width:100%"></div><span class="label">0</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- CRITICAL VULNERABILITIES -->
+<div class="section">
+  <h2>🔴 الثغرات الحرجة — يجب معالجتها فورًا</h2>
+
+  <div class="vuln-card" style="border-right:4px solid #dc2626;">
+    <div class="vuln-header">
+      <span class="vuln-title">C1. AVTAX_API_KEY قيمته الافتراضية فارغة</span>
+      <span class="badge critical">حرجة</span>
+    </div>
+    <div class="vuln-location">src/lib/zatca.ts:4</div>
+    <div class="vuln-desc">
+      <code>const AVTAX_API_KEY = process.env.AVTAX_API_KEY ?? ""</code> — إذا لم يُضبط المفتاح، يُرسل <code>Bearer (فارغ)</code> لكل طلبات ZATCA. بعض APIs قد تقبل التوكن الفارغ.
+    </div>
+  </div>
+
+  <div class="vuln-card" style="border-right:4px solid #dc2626;">
+    <div class="vuln-header">
+      <span class="vuln-title">C2. باسوورد PostgreSQL مكتوب بنص واضح</span>
+      <span class="badge critical">حرجة</span>
+    </div>
+    <div class="vuln-location">docker-compose.yml</div>
+    <div class="vuln-desc">
+      <code>POSTGRES_PASSWORD=postgres</code> و <code>DATABASE_URL=postgresql://postgres:postgres@db:5432/fatoora</code> — الباسوورد مكتوب بنص واضح في ملف الإعدادات.
+    </div>
+  </div>
+</div>
+
+<!-- HIGH VULNERABILITIES -->
+<div class="section">
+  <h2>🟠 الثغرات العالية — يجب معالجتها قريبًا</h2>
+
+  <div class="vuln-card" style="border-right:4px solid #ea580c;">
+    <div class="vuln-header">
+      <span class="vuln-title">H1. Rate limiting في الذاكرة فقط</span>
+      <span class="badge high">عالية</span>
+    </div>
+    <div class="vuln-location">src/lib/rate-limit.ts</div>
+    <div class="vuln-desc">In-memory Map لا يعمل مع عدة خوادم (horizontal scaling). المهاجم يمكنه إرسال الطلبات عبر خوادم مختلفة لتجاوز الحد.</div>
+  </div>
+
+  <div class="vuln-card" style="border-right:4px solid #ea580c;">
+    <div class="vuln-header">
+      <span class="vuln-title">H2. totpSecret مخزن بدون تشفير</span>
+      <span class="badge high">عالية</span>
+    </div>
+    <div class="vuln-location">prisma/schema.prisma</div>
+    <div class="vuln-desc">حقل totpSecret يُخزن بنص واضح في قاعدة البيانات. يجب تشفيره باستخدام ENCRYPTION_KEY.</div>
+  </div>
+
+  <div class="vuln-card" style="border-right:4px solid #ea580c;">
+    <div class="vuln-header">
+      <span class="vuln-title">H3. resetToken مخزن plaintext</span>
+      <span class="badge high">عالية</span>
+    </div>
+    <div class="vuln-location">prisma/schema.prisma</div>
+    <div class="vuln-desc">رمز إعادة تعيين كلمة المرور يُخزن بدون hashing. أي وصول لقاعدة البيانات يسمح بإعادة تعيين أي كلمة مرور.</div>
+  </div>
+
+  <div class="vuln-card" style="border-right:4px solid #ea580c;">
+    <div class="vuln-header">
+      <span class="vuln-title">H4. باسوورد تجريبي ضعيف 123456</span>
+      <span class="badge high">عالية</span>
+    </div>
+    <div class="vuln-location">prisma/seed.ts</div>
+    <div class="vuln-desc">باسوورد الحساب التجريبي 123456 — يمكن لأي شخص تشغيل seed ثم تسجيل الدخول. يجب جعله عشوائيًا أو من متغير بيئة.</div>
+  </div>
+
+  <div class="vuln-card" style="border-right:4px solid #ea580c;">
+    <div class="vuln-header">
+      <span class="vuln-title">H5. CSP يحتوي unsafe-inline + unsafe-eval</span>
+      <span class="badge high">عالية</span>
+    </div>
+    <div class="vuln-location">next.config.ts</div>
+    <div class="vuln-desc">script-src يحتوي على 'unsafe-inline' و 'unsafe-eval' — ضروري لـ Next.js HMR ولكنه يقلل فعالية CSP ضد XSS في الإنتاج.</div>
+  </div>
+</div>
+
+<!-- ALL FINDINGS SUMMARY -->
+<div class="section">
+  <h2>📋 جميع المشاكل المكتشفة</h2>
+
+  <h3>🔴 الحرجة (Critical)</h3>
+  <table>
+    <tr><th>#</th><th>المشكلة</th><th>الموقع</th></tr>
+    <tr><td>C1</td><td>AVTAX_API_KEY قيمته الافتراضية فارغة</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/zatca.ts:4</td></tr>
+    <tr><td>C2</td><td>باسوورد PostgreSQL مكتوب بنص واضح</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">docker-compose.yml</td></tr>
+  </table>
+
+  <h3>🟠 العالية (High)</h3>
+  <table>
+    <tr><th>#</th><th>المشكلة</th><th>الموقع</th></tr>
+    <tr><td>H1</td><td>Rate limiting في الذاكرة فقط (in-memory)</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/rate-limit.ts</td></tr>
+    <tr><td>H2</td><td>totpSecret مخزن بدون تشفير</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">prisma/schema.prisma</td></tr>
+    <tr><td>H3</td><td>resetToken مخزن plaintext</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">prisma/schema.prisma</td></tr>
+    <tr><td>H4</td><td>باسوورد تجريبي ضعيف 123456</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">prisma/seed.ts</td></tr>
+    <tr><td>H5</td><td>CSP يحتوي unsafe-inline + unsafe-eval</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">next.config.ts</td></tr>
+  </table>
+
+  <h3>🟡 المتوسطة (Medium)</h3>
+  <table>
+    <tr><th>#</th><th>المشكلة</th><th>الموقع</th></tr>
+    <tr><td>M1</td><td>devLink يُسرب رابط إعادة التعيين</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">auth/forgot-password/page.tsx</td></tr>
+    <tr><td>M2</td><td>حساب الضريبة client-side فقط</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">invoices/new, invoices/[id]/edit</td></tr>
+    <tr><td>M3</td><td>كشف وجود 2FA (User Enumeration)</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">auth/login/page.tsx</td></tr>
+    <tr><td>M4</td><td>اعتماد ALLOWED_ORIGINS على NEXT_PUBLIC_APP_URL</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/security.ts</td></tr>
+    <tr><td>M5</td><td>سباق سباق (Race condition) في checkRateLimit</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/rate-limit.ts</td></tr>
+    <tr><td>M6</td><td>مفتاح التشفير في ذاكرة عامة (cachedKey)</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/encryption.ts</td></tr>
+    <tr><td>M7</td><td>XSS محتمل في resetLink داخل HTML</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/email.ts</td></tr>
+    <tr><td>M8</td><td>Empty catch يخفي أخطاء التحقق في totp</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/totp.ts</td></tr>
+    <tr><td>M9</td><td>تسريب استجابة خطأ ZATCA</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/zatca.ts</td></tr>
+    <tr><td>M10</td><td>قطع بيانات TLV بصمت (silent truncation)</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/qr.ts</td></tr>
+    <tr><td>M11</td><td>لا يوجد SSL protocols/ciphers في nginx</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">nginx.conf</td></tr>
+    <tr><td>M12</td><td>لا يوجد HEALTHCHECK في Dockerfile</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">Dockerfile</td></tr>
+    <tr><td>M13</td><td>لا يوجد rate limiting في nginx</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">nginx.conf</td></tr>
+    <tr><td>M14</td><td>next-auth في إصدار beta</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">package.json</td></tr>
+    <tr><td>M15</td><td>لا يوجد CAPTCHA على التسجيل/الدخول</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/auth.ts</td></tr>
+  </table>
+
+  <h3>⚪ المنخفضة (Low)</h3>
+  <table>
+    <tr><th>#</th><th>المشكلة</th><th>الموقع</th></tr>
+    <tr><td>L1</td><td>إخفاء فشل الحذف (catch فارغ)</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/auth.ts:95</td></tr>
+    <tr><td>L2</td><td>تزيين IP عبر x-forwarded-for</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/auth.ts:20-22</td></tr>
+    <tr><td>L3</td><td>Global mutable state في db.ts</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/db.ts:7-9</td></tr>
+    <tr><td>L4</td><td>Empty catch في security.ts</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/security.ts:18,20</td></tr>
+    <tr><td>L5</td><td>تسريب استجابة API في email.ts</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/email.ts:36,43</td></tr>
+    <tr><td>L6</td><td>Type assertion غير آمن في audit.ts</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/audit.ts:31</td></tr>
+    <tr><td>L7</td><td>طباعة أسماء المتغيرات المفقودة في env.ts</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/lib/env.ts:37-41</td></tr>
+    <tr><td>L8</td><td>معلومات ثابتة مكشوفة (سجل تجاري) في الصفحة الرئيسية</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">src/app/page.tsx</td></tr>
+  </table>
+</div>
+
+<!-- PAGES ANALYSIS -->
+<div class="section">
+  <h2>📄 تحليل الصفحات</h2>
+
+  <h3>✅ صفحات آمنة تمامًا (9)</h3>
+  <table>
+    <tr><th>الصفحة</th><th>النوع</th><th>ملاحظات</th></tr>
+    <tr><td>/</td><td>Server</td><td>صفحة تسويقية ثابتة</td></tr>
+    <tr><td>/auth/reset-password</td><td>Client</td><td>timingSafeEqual, CSRF, Zod, verification مرحلتين</td></tr>
+    <tr><td>/dashboard</td><td>Server</td><td>بيانات من server-side فقط</td></tr>
+    <tr><td>/dashboard/invoices</td><td>Server</td><td>IDOR محمي</td></tr>
+    <tr><td>/dashboard/invoices/[id]</td><td>Server</td><td>IDOR + notFound()</td></tr>
+    <tr><td>/dashboard/clients</td><td>Server</td><td>IDOR محمي</td></tr>
+    <tr><td>/privacy</td><td>Server</td><td>ثابتة</td></tr>
+    <tr><td>/terms</td><td>Server</td><td>ثابتة</td></tr>
+    <tr><td>/complaints, /returns</td><td>Server</td><td>ثابتة</td></tr>
+  </table>
+
+  <h3>⚠️ صفحات تحتاج تحسين (10)</h3>
+  <table>
+    <tr><th>الصفحة</th><th>المشكلة</th><th>الخطورة</th></tr>
+    <tr><td>/auth/login</td><td>User Enumeration عبر check-2fa</td><td><span class="badge medium">Medium</span></td></tr>
+    <tr><td>/auth/register</td><td>Client-side validation فقط</td><td><span class="badge low">Low</span></td></tr>
+    <tr><td>/auth/forgot-password</td><td>devLink يُعرض على الشاشة</td><td><span class="badge high">High</span></td></tr>
+    <tr><td>/dashboard/settings</td><td>حذف الحساب بدون rate limiting واضح</td><td><span class="badge low">Low</span></td></tr>
+    <tr><td>/dashboard/invoices/new</td><td>حساب الضريبة client-side</td><td><span class="badge medium">Medium</span></td></tr>
+    <tr><td>/dashboard/invoices/[id]/edit</td><td>حساب الضريبة client-side</td><td><span class="badge medium">Medium</span></td></tr>
+    <tr><td>/dashboard/clients/new</td><td>Client-side validation فقط</td><td><span class="badge low">Low</span></td></tr>
+    <tr><td>/dashboard/clients/[id]/edit</td><td>Client-side validation فقط</td><td><span class="badge low">Low</span></td></tr>
+    <tr><td>/dashboard/billing</td><td>window.location.href (phishing risk)</td><td><span class="badge low">Low</span></td></tr>
+  </table>
+</div>
+
+<!-- API ANALYSIS -->
+<div class="section">
+  <h2>🛡️ تحليل API Routes (56 Endpoint)</h2>
+
+  <div class="grid-3">
+    <div>
+      <p style="margin-bottom:5px;">✅ محمي بالكامل</p>
+      <div class="progress-bar"><div class="fill green" style="width:54%"></div><span class="label">17</span></div>
+    </div>
+    <div>
+      <p style="margin-bottom:5px;">⚠️ ناقص حماية</p>
+      <div class="progress-bar"><div class="fill orange" style="width:46%"></div><span class="label">16</span></div>
+    </div>
+    <div>
+      <p style="margin-bottom:5px;">❌ غير محمي</p>
+      <div class="progress-bar"><div class="fill green" style="width:0%"></div><span class="label">0</span></div>
+    </div>
+  </div>
+
+  <table style="margin-top:15px;">
+    <tr><th>الملف</th><th>GET</th><th>POST</th><th>PUT/PATCH</th><th>DELETE</th></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">clients/route.ts</td><td><span class="badge good">✅</span></td><td><span class="badge warning">⚠️</span></td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">clients/[id]/route.ts</td><td><span class="badge good">✅</span></td><td>—</td><td><span class="badge warning">⚠️</span></td><td><span class="badge good">✅</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">clients/[id]/invoices/route.ts</td><td><span class="badge good">✅</span></td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">invoices/route.ts</td><td><span class="badge good">✅</span></td><td><span class="badge warning">⚠️</span></td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">invoices/[id]/route.ts</td><td><span class="badge good">✅</span></td><td>—</td><td><span class="badge warning">⚠️</span></td><td><span class="badge good">✅</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">invoices/[id]/pdf/route.ts</td><td><span class="badge good">✅</span></td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">invoices/[id]/qr/route.ts</td><td><span class="badge good">✅</span></td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">invoices/[id]/cancel/route.ts</td><td>—</td><td><span class="badge good">✅</span></td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">invoices/[id]/submit/route.ts</td><td>—</td><td><span class="badge good">✅</span></td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">settings/route.ts</td><td><span class="badge good">✅</span></td><td>—</td><td><span class="badge warning">⚠️</span></td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">checkout/route.ts</td><td>—</td><td><span class="badge warning">⚠️</span></td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">whatsapp/route.ts</td><td>—</td><td><span class="badge warning">⚠️</span></td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">webhooks/stripe/route.ts</td><td>—</td><td><span class="badge warning">⚠️</span></td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">webhooks/whatsapp/route.ts</td><td><span class="badge warning">⚠️</span></td><td><span class="badge warning">⚠️</span></td><td>—</td><td>—</td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">جميع auth routes (9)</td><td>—</td><td><span class="badge warning">⚠️</span></td><td>—</td><td>—</td></tr>
+  </table>
+
+  <p style="margin-top:15px;font-size:0.9em;color:#6b7280;">
+    <strong>الناقص المشترك:</strong> input sanitization (XSS protection) غير موجود في أي endpoint.
+    <strong>ملاحظة:</strong> React/JSX يهرب HTML تلقائيًا، لذا الخطر الفعلي منخفض.
+  </p>
+</div>
+
+<!-- LINK ANALYSIS -->
+<div class="section">
+  <h2>🔗 تحليل الروابط</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>✅ جميع الروابط سليمة</h3>
+      <ul class="strength-list">
+        <li><span class="check">✅</span> /auth/login</li>
+        <li><span class="check">✅</span> /auth/register</li>
+        <li><span class="check">✅</span> /auth/forgot-password</li>
+        <li><span class="check">✅</span> /auth/reset-password (ديناميكي)</li>
+        <li><span class="check">✅</span> /dashboard</li>
+        <li><span class="check">✅</span> /dashboard/invoices</li>
+        <li><span class="check">✅</span> /dashboard/invoices/new</li>
+        <li><span class="check">✅</span> /dashboard/invoices/[id] (ديناميكي)</li>
+        <li><span class="check">✅</span> /dashboard/invoices/[id]/edit (ديناميكي)</li>
+        <li><span class="check">✅</span> /dashboard/clients</li>
+        <li><span class="check">✅</span> /dashboard/clients/new</li>
+        <li><span class="check">✅</span> /dashboard/clients/[id]/edit (ديناميكي)</li>
+        <li><span class="check">✅</span> /dashboard/settings</li>
+        <li><span class="check">✅</span> /dashboard/billing</li>
+        <li><span class="check">✅</span> /privacy, /terms, /returns, /complaints</li>
+      </ul>
+    </div>
+    <div>
+      <h3>⚠️ صفحات غير موجودة في Sitemap</h3>
+      <ul class="findings-list">
+        <li>
+          <span class="icon">⚠️</span>
+          <div class="content">
+            <div class="title">/auth/reset-password</div>
+            <div class="desc">صفحة عامة (public) غير موجودة في sitemap.xml. يجب إضافتها.</div>
+          </div>
+        </li>
+      </ul>
+      <h3 style="margin-top:20px;">✅ ملفات النظام</h3>
+      <ul class="strength-list">
+        <li><span class="check">✅</span> not-found.tsx موجود</li>
+        <li><span class="check">✅</span> error.tsx موجود</li>
+        <li><span class="check">✅</span> loading.tsx موجود (root + dashboard)</li>
+        <li><span class="check">✅</span> layout.tsx موجود (root + dashboard)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- STRENGTHS -->
+<div class="section">
+  <h2>✅ نقاط القوة — الحماية الموجودة</h2>
+
+  <div class="grid-3">
+    <div>
+      <ul class="strength-list">
+        <li><span class="check">✅</span> HSTS (63072000s, preload)</li>
+        <li><span class="check">✅</span> X-Frame-Options: DENY</li>
+        <li><span class="check">✅</span> X-Content-Type-Options: nosniff</li>
+        <li><span class="check">✅</span> Referrer-Policy: strict-origin</li>
+        <li><span class="check">✅</span> Permissions-Policy محدودة</li>
+      </ul>
+    </div>
+    <div>
+      <ul class="strength-list">
+        <li><span class="check">✅</span> CSRF Guard على جميع mutations</li>
+        <li><span class="check">✅</span> Rate Limiting على جميع endpoints الداخلية</li>
+        <li><span class="check">✅</span> Zod Validation على جميع POST/PUT/PATCH</li>
+        <li><span class="check">✅</span> Audit Logging (42/56 endpoint)</li>
+        <li><span class="check">✅</span> IDOR Protection (فحص userId)</li>
+      </ul>
+    </div>
+    <div>
+      <ul class="strength-list">
+        <li><span class="check">✅</span> AES-256-GCM Encryption</li>
+        <li><span class="check">✅</span> TOTP / 2FA</li>
+        <li><span class="check">✅</span> IP Ban + Account Lockout</li>
+        <li><span class="check">✅</span> Timing-safe token comparison</li>
+        <li><span class="check">✅</span> Prisma ORM (parameterized queries)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div class="section">
+  <h2>📋 التوصيات</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>🔴 عاجلة (قبل النشر)</h3>
+      <ol style="padding-right:20px;">
+        <li style="margin-bottom:8px;">إزالة <code>?? ""</code> من <code>AVTAX_API_KEY</code> في zatca.ts</li>
+        <li style="margin-bottom:8px;">نقل باسوورد PostgreSQL من docker-compose إلى .env</li>
+        <li style="margin-bottom:8px;">تشفير <code>totpSecret</code> في قاعدة البيانات</li>
+        <li style="margin-bottom:8px;">Hashing <code>resetToken</code> قبل التخزين</li>
+        <li style="margin-bottom:8px;">تغيير باسوورد seed التجريبي (123456)</li>
+        <li style="margin-bottom:8px;">إضافة /auth/reset-password إلى sitemap</li>
+      </ol>
+    </div>
+    <div>
+      <h3>🟠 مهمة</h3>
+      <ol style="padding-right:20px;" start="7">
+        <li style="margin-bottom:8px;">استبدال in-memory rate limiting بـ Redis</li>
+        <li style="margin-bottom:8px;">إضافة SSL ciphers/protocols إلى nginx.conf</li>
+        <li style="margin-bottom:8px;">إزالة unsafe-inline/eval من CSP للإنتاج</li>
+        <li style="margin-bottom:8px;">إضافة eslint-plugin-security</li>
+        <li style="margin-bottom:8px;">إضافة HEALTHCHECK إلى Dockerfile</li>
+        <li style="margin-bottom:8px;">إضافة CAPTCHA إلى التسجيل والدخول</li>
+      </ol>
+    </div>
+  </div>
+
+  <div style="margin-top:15px;">
+    <h3>🟡 تحسينية</h3>
+    <div class="grid-3">
+      <ul style="list-style:none;padding-right:0;">
+        <li style="margin-bottom:5px;">• إضافة base-uri + form-action إلى CSP</li>
+        <li style="margin-bottom:5px;">• إضافة rate limiting على webhooks</li>
+        <li style="margin-bottom:5px;">• إضافة resource limits في compose</li>
+      </ul>
+      <ul style="list-style:none;padding-right:0;">
+        <li style="margin-bottom:5px;">• استثناء prisma/seed.ts من .dockerignore</li>
+        <li style="margin-bottom:5px;">• إضافة postinstall script في package.json</li>
+        <li style="margin-bottom:5px;">• إضافة @@unique([userId, invoiceNumber])</li>
+      </ul>
+      <ul style="list-style:none;padding-right:0;">
+        <li style="margin-bottom:5px;">• إضافة updatedAt إلى Settings, ZatcaConfig</li>
+        <li style="margin-bottom:5px;">• إضافة rate limit على /auth/register</li>
+        <li style="margin-bottom:5px;">• إعادة حساب الضريبة Server-side</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- INTERACTION MAP -->
+<div class="section">
+  <h2>📱 خريطة تفاعل الصفحات مع API</h2>
+  <table>
+    <tr><th>الصفحة</th><th>→ API Endpoint</th></tr>
+    <tr><td>/auth/login</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">POST /api/auth/check-2fa<br>signIn("credentials")</td></tr>
+    <tr><td>/auth/register</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">POST /api/auth/register</td></tr>
+    <tr><td>/auth/forgot-password</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">POST /api/auth/forgot-password</td></tr>
+    <tr><td>/auth/reset-password</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">POST /api/auth/verify-reset-token<br>POST /api/auth/reset-password</td></tr>
+    <tr><td>/dashboard/settings</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">GET /api/settings | PUT /api/settings<br>POST /api/auth/2fa/setup | POST /api/auth/2fa/verify<br>POST /api/auth/delete-account</td></tr>
+    <tr><td>/dashboard/invoices/new</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">GET /api/clients | POST /api/invoices</td></tr>
+    <tr><td>/dashboard/invoices/[id]/edit</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">GET /api/clients | GET /api/invoices/[id]<br>PATCH /api/invoices/[id]</td></tr>
+    <tr><td>/dashboard/clients/new</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">POST /api/clients</td></tr>
+    <tr><td>/dashboard/clients/[id]/edit</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">GET /api/clients/[id] | PATCH /api/clients/[id]</td></tr>
+    <tr><td>/dashboard/billing</td><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">POST /api/checkout</td></tr>
+  </table>
+</div>
+
+<!-- LIBRARIES SUMMARY -->
+<div class="section">
+  <h2>📁 تحليل الملفات المكتبية (src/lib)</h2>
+
+  <table>
+    <tr><th>الملف</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>التقييم</th></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">auth.ts</td><td>0</td><td>0</td><td>0</td><td>3</td><td><span class="badge good">🟢 جيد</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">security.ts</td><td>0</td><td>0</td><td>1</td><td>2</td><td><span class="badge warning">🟡 متوسط</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">rate-limit.ts</td><td>0</td><td>1</td><td>1</td><td>1</td><td><span class="badge high">🟠 عالي</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">encryption.ts</td><td>0</td><td>0</td><td>1</td><td>2</td><td><span class="badge warning">🟡 متوسط</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">email.ts</td><td>0</td><td>0</td><td>1</td><td>3</td><td><span class="badge warning">🟡 متوسط</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">totp.ts</td><td>0</td><td>0</td><td>1</td><td>1</td><td><span class="badge warning">🟡 متوسط</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">zatca.ts</td><td><strong>1</strong></td><td>0</td><td>1</td><td>2</td><td><span class="badge critical">🔴 حرج</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">qr.ts</td><td>0</td><td>0</td><td>1</td><td>1</td><td><span class="badge warning">🟡 متوسط</span></td></tr>
+    <tr><td style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">validation.ts, env.ts, utils.ts, db.ts, audit.ts, render-pdf.tsx</td><td>0</td><td>0</td><td>0</td><td>6</td><td><span class="badge good">🟢 جيد</span></td></tr>
+  </table>
+</div>
+
+<!-- FILES MODIFIED -->
+<div class="section">
+  <h2>🗂️ الملفات التي تم فحصها</h2>
+  <div class="grid-3">
+    <div>
+      <h3>📄 الصفحات (19)</h3>
+      <ul style="list-style:none;padding-right:0;font-size:0.85em;direction:ltr;text-align:left;">
+        <li>src/app/page.tsx</li>
+        <li>src/app/auth/login/page.tsx</li>
+        <li>src/app/auth/register/page.tsx</li>
+        <li>src/app/auth/forgot-password/page.tsx</li>
+        <li>src/app/auth/reset-password/page.tsx</li>
+        <li>src/app/dashboard/page.tsx</li>
+        <li>src/app/dashboard/settings/page.tsx</li>
+        <li>src/app/dashboard/invoices/page.tsx</li>
+        <li>src/app/dashboard/invoices/new/page.tsx</li>
+        <li>src/app/dashboard/invoices/[id]/page.tsx</li>
+        <li>src/app/dashboard/invoices/[id]/edit/page.tsx</li>
+        <li>src/app/dashboard/clients/page.tsx</li>
+        <li>src/app/dashboard/clients/new/page.tsx</li>
+        <li>src/app/dashboard/clients/[id]/edit/page.tsx</li>
+        <li>src/app/dashboard/billing/page.tsx</li>
+        <li>src/app/(legal)/privacy/page.tsx</li>
+        <li>src/app/(legal)/terms/page.tsx</li>
+        <li>src/app/(legal)/complaints/page.tsx</li>
+        <li>src/app/(legal)/returns/page.tsx</li>
+      </ul>
+    </div>
+    <div>
+      <h3>🔌 API Routes (24)</h3>
+      <ul style="list-style:none;padding-right:0;font-size:0.85em;direction:ltr;text-align:left;">
+        <li>auth/[...nextauth]/route.ts</li>
+        <li>auth/register/route.ts</li>
+        <li>auth/forgot-password/route.ts</li>
+        <li>auth/reset-password/route.ts</li>
+        <li>auth/verify-reset-token/route.ts</li>
+        <li>auth/check-2fa/route.ts</li>
+        <li>auth/2fa/setup/route.ts</li>
+        <li>auth/2fa/verify/route.ts</li>
+        <li>auth/delete-account/route.ts</li>
+        <li>auth/signout/route.ts</li>
+        <li>clients/route.ts</li>
+        <li>clients/[id]/route.ts</li>
+        <li>clients/[id]/invoices/route.ts</li>
+        <li>invoices/route.ts</li>
+        <li>invoices/[id]/route.ts</li>
+        <li>invoices/[id]/pdf/route.ts</li>
+        <li>invoices/[id]/qr/route.ts</li>
+        <li>invoices/[id]/cancel/route.ts</li>
+        <li>invoices/[id]/submit/route.ts</li>
+        <li>settings/route.ts</li>
+        <li>checkout/route.ts</li>
+        <li>webhooks/stripe/route.ts</li>
+        <li>webhooks/whatsapp/route.ts</li>
+        <li>whatsapp/route.ts</li>
+      </ul>
+    </div>
+    <div>
+      <h3>📚 الملفات المكتبية (14)</h3>
+      <ul style="list-style:none;padding-right:0;font-size:0.85em;direction:ltr;text-align:left;">
+        <li>lib/auth.ts</li>
+        <li>lib/db.ts</li>
+        <li>lib/security.ts</li>
+        <li>lib/rate-limit.ts</li>
+        <li>lib/encryption.ts</li>
+        <li>lib/audit.ts</li>
+        <li>lib/email.ts</li>
+        <li>lib/totp.ts</li>
+        <li>lib/utils.ts</li>
+        <li>lib/validation.ts</li>
+        <li>lib/zatca.ts</li>
+        <li>lib/qr.ts</li>
+        <li>lib/env.ts</li>
+        <li>lib/render-pdf.tsx</li>
+      </ul>
+      <h3 style="margin-top:15px;">⚙️ إعدادات (12)</h3>
+      <ul style="list-style:none;padding-right:0;font-size:0.85em;direction:ltr;text-align:left;">
+        <li>next.config.ts</li>
+        <li>package.json</li>
+        <li>tsconfig.json</li>
+        <li>Dockerfile</li>
+        <li>docker-compose.yml</li>
+        <li>nginx.conf</li>
+        <li>.env.example</li>
+        <li>.gitignore</li>
+        <li>.dockerignore</li>
+        <li>eslint.config.mjs</li>
+        <li>postcss.config.mjs</li>
+        <li>prisma/schema.prisma</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p>تم إعداد هذا التقرير بواسطة أدوات الفحص الآلي — 2 يونيو 2026</p>
+  <p>مشروع فاتورة v0.1.0 — جميع الحقوق محفوظة</p>
+</div>
+
+</div>
+
+</body>
+</html>
