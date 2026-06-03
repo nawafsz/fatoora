@@ -9,6 +9,10 @@ async function main() {
 
   const seedPassword = process.env.SEED_PASSWORD ?? crypto.randomBytes(8).toString("hex");
   const passwordHash = await bcrypt.hash(seedPassword, 12);
+  const adminHash = await bcrypt.hash(
+    process.env.ADMIN_PASSWORD ?? "Aa102030",
+    12
+  );
 
   const demo = await prisma.user.upsert({
     where: { email: "demo@fatoora.sa" },
@@ -28,6 +32,23 @@ async function main() {
   });
 
   console.log(`✅ Demo user created: ${demo.email}`);
+
+  const admin = await prisma.user.upsert({
+    where: { email: "nawaf@test.com" },
+    update: {},
+    create: {
+      name: "مدير النظام",
+      email: "nawaf@test.com",
+      phone: "0500000001",
+      passwordHash: adminHash,
+      role: "admin",
+      plan: "premium",
+      invoicesLimit: 999999,
+      active: true,
+    },
+  });
+
+  console.log(`✅ Admin user created: ${admin.email}`);
 
   await prisma.settings.upsert({
     where: { userId: demo.id },
