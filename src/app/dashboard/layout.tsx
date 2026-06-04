@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MobileNav } from "./mobile-nav";
 import { getTranslations } from "@/lib/i18n";
+import { SignoutButton } from "@/components/signout-button";
 
 const navLinks = [
   { href: "/dashboard", key: "home", icon: "⊞" },
@@ -109,11 +110,7 @@ export default async function DashboardLayout({
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-semibold text-[#0d2818] leading-tight">{displayName}</p>
-                <form action="/api/auth/signout" method="POST">
-                  <button type="submit" className="text-xs text-gray-400 hover:text-red-500 transition-colors">
-                    {dict.nav.signout}
-                  </button>
-                </form>
+                <SignoutButton label={dict.nav.signout} />
               </div>
             </div>
           </div>
