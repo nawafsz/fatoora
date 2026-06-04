@@ -22,6 +22,17 @@ export async function POST(req: Request) {
     });
   }
 
-  await signOut({ redirect: false });
-  return NextResponse.redirect(new URL("/", process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"));
+  const signOutRes = await signOut({ redirect: false });
+  const redirectUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const response = NextResponse.redirect(new URL("/", redirectUrl));
+
+  if (signOutRes?.headers) {
+    for (const [key, value] of signOutRes.headers.entries()) {
+      if (key.toLowerCase() === "set-cookie") {
+        response.headers.append(key, value);
+      }
+    }
+  }
+
+  return response;
 }
