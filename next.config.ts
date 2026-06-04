@@ -18,6 +18,7 @@ const CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",
