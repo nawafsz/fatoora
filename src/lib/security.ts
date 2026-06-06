@@ -1,25 +1,44 @@
 import { NextResponse } from "next/server";
 
-const ALLOWED_ORIGINS: string[] = [
-  process.env.NEXT_PUBLIC_APP_URL,
-  "http://localhost:3000",
-  "https://fatoora.sa",
-  "http://localhost",
-].filter((s): s is string => Boolean(s) && s !== "undefined");
+function getHostOrigin(): string | null {
+  try {
+    return process.env.AUTH_URL
+      ? new URL(process.env.AUTH_URL).origin
+      : process.env.NEXTAUTH_URL
+        ? new URL(process.env.NEXTAUTH_URL).origin
+        : process.env.NEXT_PUBLIC_APP_URL
+          ? new URL(process.env.NEXT_PUBLIC_APP_URL).origin
+          : null;
+  } catch {
+    return null;
+  }
+}
 
 export function validateOrigin(req: Request): boolean {
   const origin = req.headers.get("origin");
   const referer = req.headers.get("referer");
-  if (!origin && !referer) return false;
-  const source = origin ?? referer ?? "";
+  const host = req.headers.get("host");
+
+  const source = origin ?? referer;
+  if (!source && !host) return false;
+
   try {
-    const sourceOrigin = new URL(source).origin;
-    return ALLOWED_ORIGINS.some((allowed) => {
-      try { return new URL(allowed).origin === sourceOrigin; }
-      catch { return false; }
-    });
+    const sourceOrigin = source ? new URL(source).origin : null;
+
+    const hostOrigin = host
+      ? `${req.headers.get("x-forwarded-proto") ?? "https"}://${host}`
+      : null;
+    const hostOriginParsed = hostOrigin ? new URL(hostOrigin).origin : null;
+
+    const configuredOrigin = getHostOrigin();
+
+    if (sourceOrigin && hostOriginParsed && sourceOrigin === hostOriginParsed) return true;
+    if (sourceOrigin && configuredOrigin && sourceOrigin === configuredOrigin) return true;
+    if (!sourceOrigin && hostOriginParsed && configuredOrigin && hostOriginParsed === configuredOrigin) return true;
+
+    return false;
   } catch {
-    return origin ? new URL(origin).origin === origin : false;
+    return false;
   }
 }
 
