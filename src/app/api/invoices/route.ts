@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? invalidInvoiceDataMsg[lang] }, { status: 400 });
   }
 
-  const { clientId, type, date, dueDate, items, notes } = parsed.data;
+  const { clientId, type, date, dueDate, items, notes, projectId } = parsed.data;
 
   const user = await db.user.findUnique({
     where: { id: session!.user!.id },
@@ -127,13 +127,15 @@ export async function POST(req: Request) {
       notes,
       userId: session!.user!.id,
       clientId,
+      projectId: projectId ?? null,
     },
     include: { client: true },
   });
 
-  await db.settings.update({
+  await db.settings.upsert({
     where: { userId: session!.user!.id },
-    data: { nextNumber: nextNum + 1 },
+    update: { nextNumber: nextNum + 1 },
+    create: { userId: session!.user!.id, nextNumber: nextNum + 1 },
   });
 
   await auditLog({

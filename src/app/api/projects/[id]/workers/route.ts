@@ -45,9 +45,17 @@ export async function POST(
   if (!project) return NextResponse.json({ error: "المشروع غير موجود" }, { status: 404 });
 
   const json = await req.json();
-  const { workerId, dailyRate } = json;
+  const { workerId, dailyRate, active } = json;
 
   if (!workerId) return NextResponse.json({ error: "العامل مطلوب" }, { status: 400 });
+
+  if (active === false) {
+    await db.projectWorker.updateMany({
+      where: { projectId: id, workerId },
+      data: { active: false },
+    });
+    return NextResponse.json({ success: true });
+  }
 
   const assignment = await db.projectWorker.upsert({
     where: { projectId_workerId: { projectId: id, workerId } },

@@ -74,29 +74,49 @@ export async function POST(
       unitPrice: number;
     }>;
 
+    const zatcaConfig = await db.zatcaConfig.findUnique({
+      where: { userId: session!.user!.id },
+    });
+    let clientId: string | undefined;
+    let clientSecret: string | undefined;
+    if (zatcaConfig?.avtaxClientId) {
+      try { clientId = decryptString(zatcaConfig.avtaxClientId); } catch {}
+    }
+    if (zatcaConfig?.avtaxClientSecret) {
+      try { clientSecret = decryptString(zatcaConfig.avtaxClientSecret); } catch {}
+    }
+
     const zatcaRes = await submitInvoice({
-      invoiceNumber: invoice.invoiceNumber,
-      issueDate: invoice.date.toISOString(),
-      invoiceType: invoice.type,
+      documentType: "TaxInvoice",
+      invoiceIndicator: "Nominal",
+      currency: "SAR",
       supplier: {
-        name: user.companyName,
-        taxNumber: user.taxNumber,
+        supplierName: user.companyName,
+        supplierVatId: user.taxNumber,
+        supplierAddress: {
+          streetName: user.street ?? undefined,
+          buildingNumber: user.buildingNumber ?? undefined,
+          cityName: user.city ?? undefined,
+          postalZone: user.postalCode ?? undefined,
+          country: "SA",
+          citySubdivisionName: user.neighborhood ?? undefined,
+          plotIdentification: user.additionalNumber ?? undefined,
+        },
       },
-      customer: {
-        name: invoice.client.name.includes(":") ? decryptString(invoice.client.name) : invoice.client.name,
-        taxNumber: invoice.client.taxNumber ?? undefined,
+      buyer: {
+        buyerName: invoice.client.name.includes(":") ? decryptString(invoice.client.name) : invoice.client.name,
+        buyerVatId: invoice.client.taxNumber ?? "",
       },
-      items: items.map((i) => ({
-        name: i.name,
-        quantity: i.quantity,
-        taxExclusivePrice: i.unitPrice,
-        unitPrice: i.unitPrice,
-        taxAmount: i.unitPrice * i.quantity * 0.15,
-        total: i.quantity * i.unitPrice,
+      documentLineItems: items.map((i) => ({
+        lineItemName: i.name,
+        lineItemPrice: Number(i.unitPrice),
+        lineItemQty: Number(i.quantity),
+        vatRateOnLineItem: 15,
       })),
-      total: Number(invoice.subtotal),
-      taxAmount: Number(invoice.taxAmount),
-      totalWithTax: Number(invoice.total),
+    }, {
+      userId: session!.user!.id,
+      clientId,
+      clientSecret,
     });
 
     const qrDataUrl = await generateInvoiceQR({

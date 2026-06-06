@@ -43,9 +43,14 @@ model User {
   passwordHash  String
   companyName   String?
   taxNumber     String?
-  commercialReg String?
-  city          String?
-  plan          String    @default("free")
+  commercialReg   String?
+  city            String?
+  street          String?   // اسم الشارع (Saudi National Address)
+  buildingNumber  String?   // رقم المبنى
+  neighborhood    String?   // الحي
+  postalCode      String?   // الرمز البريدي
+  additionalNumber String?  // الرقم الإضافي KSA-23
+  plan            String    @default("free")
   role          String    @default("user")
   invoicesLimit Int       @default(5)
   emailVerified  Boolean   @default(false)
@@ -210,12 +215,15 @@ model Settings {
 }
 
 model ZatcaConfig {
-  id              String @id @default(cuid())
-  environment     String @default("sandbox")
-  complianceStatus String @default("pending")
-  lastSyncAt      DateTime?
-  userId          String @unique
-  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  environment       String    @default("sandbox")
+  complianceStatus  String    @default("pending")
+  lastSyncAt        DateTime?
+  avtaxClientId       String?   // Client ID لمستخدم AvTax (مشفر)
+  avtaxClientSecret   String?   // Client Secret لمستخدم AvTax (مشفر)
+  deviceSerialNumber  String?   // الرقم التسلسلي للجهاز من AvTax
+  userId              String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Ticket {

@@ -94,3 +94,43 @@ export async function PATCH(
 
   return NextResponse.json(updated);
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string; claimId: string }> }
+) {
+  const csrf = csrfGuard(_req);
+  if (csrf) return csrf;
+
+  const session = await auth();
+  const guard = apiAuthGuard(session);
+  if (guard) return guard;
+
+  const { id, claimId } = await params;
+
+  const project = await db.project.findFirst({
+    where: { id, userId: session!.user!.id },
+  });
+  if (!project) {
+    return NextResponse.json({ error: "المشروع غير موجود" }, { status: 404 });
+  }
+
+  const claim = await db.progressClaim.findFirst({
+    where: { id: claimId, projectId: id },
+  });
+  if (!claim || claim.status !== "DRAFT") {
+    return NextResponse.json({ error: "يمكن حذف المستخلصات المسودة فقط" }, { status: 400 });
+  }
+
+  await db.progressClaim.delete({ where: { id: claimId } });
+
+  await auditLog({
+    userId: session!.user!.id,
+    action: "delete",
+    resource: "project",
+    resourceId: id,
+    details: { claimNumber: claim.claimNumber },
+  });
+
+  return NextResponse.json({ success: true });
+}

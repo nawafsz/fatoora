@@ -168,6 +168,7 @@ export default async function InvoiceDetailPage({
               invoiceId={invoice.id}
               status={invoice.status}
               clientPhone={client.phone}
+              signedInvoice={invoice.zatcaResponse ? (invoice.zatcaResponse as Record<string, unknown>).signedInvoice as string : null}
             />
             {invoice.status === "DRAFT" && (
               <Link

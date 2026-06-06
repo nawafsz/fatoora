@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { csrfGuard, apiAuthGuard } from "@/lib/security";
 import { auditLog } from "@/lib/audit";
+import { decryptSensitive } from "@/lib/encryption";
 import { z } from "zod";
 
 const createProjectSchema = z.object({
@@ -56,8 +57,10 @@ export async function GET(_req: Request) {
         ? Math.min((totalClaimed / Number(p.contractValue)) * 100, 100)
         : 0;
 
+    const clientFields = ["name"] as const;
     return {
       ...p,
+      client: p.client ? decryptSensitive(p.client as Record<string, unknown>, clientFields) as typeof p.client : null,
       totalClaimed,
       totalPaid,
       completionPct: Math.round(completionPct * 10) / 10,

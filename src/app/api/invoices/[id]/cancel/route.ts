@@ -5,6 +5,7 @@ import { cancelInvoice } from "@/lib/zatca";
 import { csrfGuard, apiAuthGuard } from "@/lib/security";
 import { checkRateLimit } from "@/lib/utils";
 import { auditLog } from "@/lib/audit";
+import { decryptString } from "@/lib/encryption";
 
 export async function POST(
   _req: Request,
@@ -53,8 +54,24 @@ export async function POST(
   }
 
   try {
+    const zatcaConfig = await db.zatcaConfig.findUnique({
+      where: { userId: session!.user!.id },
+    });
+    let clientId: string | undefined;
+    let clientSecret: string | undefined;
+    if (zatcaConfig?.avtaxClientId) {
+      try { clientId = decryptString(zatcaConfig.avtaxClientId); } catch {}
+    }
+    if (zatcaConfig?.avtaxClientSecret) {
+      try { clientSecret = decryptString(zatcaConfig.avtaxClientSecret); } catch {}
+    }
+
     const uuid = invoice.xmlUuid ?? "";
-    await cancelInvoice(uuid);
+    await cancelInvoice(uuid, {
+      userId: session!.user!.id,
+      clientId,
+      clientSecret,
+    });
 
     await db.invoice.update({
       where: { id },

@@ -3,8 +3,11 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/utils";
 import { csrfGuard, apiAuthGuard } from "@/lib/security";
+import { decryptSensitive } from "@/lib/encryption";
 import { auditLog } from "@/lib/audit";
 import { z } from "zod";
+
+const SUBCONTRACTOR_FIELDS = ["name"] as const;
 
 const createSchema = z.object({
   subcontractorId: z.string().min(1),
@@ -42,7 +45,14 @@ export async function GET(
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(subcontracts);
+  const decrypted = subcontracts.map((s) => ({
+    ...s,
+    subcontractor: s.subcontractor
+      ? decryptSensitive(s.subcontractor as Record<string, unknown>, SUBCONTRACTOR_FIELDS) as typeof s.subcontractor
+      : s.subcontractor,
+  }));
+
+  return NextResponse.json(decrypted);
 }
 
 export async function POST(

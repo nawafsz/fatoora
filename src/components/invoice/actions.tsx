@@ -7,10 +7,12 @@ export function InvoiceActions({
   invoiceId,
   status,
   clientPhone,
+  signedInvoice,
 }: {
   invoiceId: string;
   status: string;
   clientPhone: string | null;
+  signedInvoice?: string | null;
 }) {
   const { dict } = useLanguage();
   const [submitting, setSubmitting] = useState(false);
@@ -156,6 +158,25 @@ export function InvoiceActions({
           className={`${btnBase} bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-100 hover:border-red-300`}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           {submitting ? dict.invoices.actions.cancelling : dict.invoices.actions.cancelInvoice}
+        </button>
+      )}
+
+      {signedInvoice && (
+        <button onClick={() => {
+          try {
+            const decoded = atob(signedInvoice);
+            const win = window.open("", "_blank");
+            if (win) {
+              win.document.write(`<pre style="direction:ltr;text-align:left;font-size:12px;background:#f5f5f5;padding:20px;white-space:pre-wrap;word-break:break-word;">${decoded.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`);
+              win.document.close();
+            }
+          } catch {
+            setMessage("فشل فك الترميز");
+          }
+        }}
+          className={`${btnBase} bg-white border-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300`}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+          {dict.invoices.actions.viewXml || "عرض XML الموقع"}
         </button>
       )}
 

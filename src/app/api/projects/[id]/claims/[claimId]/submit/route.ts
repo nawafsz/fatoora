@@ -75,9 +75,10 @@ export async function POST(
     data: { invoiceId: invoice.id, status: "SUBMITTED" },
   });
 
-  await db.settings.update({
+  await db.settings.upsert({
     where: { userId: session!.user!.id },
-    data: { nextNumber: nextNum + 1 },
+    update: { nextNumber: nextNum + 1 },
+    create: { userId: session!.user!.id, nextNumber: nextNum + 1 },
   });
 
   await auditLog({

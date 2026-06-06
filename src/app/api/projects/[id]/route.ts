@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/utils";
 import { csrfGuard, apiAuthGuard } from "@/lib/security";
 import { auditLog } from "@/lib/audit";
+import { decryptSensitive } from "@/lib/encryption";
 import { z } from "zod";
 
 const updateProjectSchema = z.object({
@@ -86,12 +87,16 @@ export async function GET(
     userId: session!.user!.id, action: "read", resource: "project", resourceId: id,
   });
 
-  return NextResponse.json({
+  const clientFields = ["name"] as const;
+  const projectWithDecrypted = {
     ...project,
+    client: project.client ? decryptSensitive(project.client as Record<string, unknown>, clientFields) as typeof project.client : null,
     totalClaimed,
     totalPaid,
     completionPct: Math.round(completionPct * 10) / 10,
-  });
+  };
+
+  return NextResponse.json(projectWithDecrypted);
 }
 
 export async function PATCH(
@@ -184,7 +189,11 @@ export async function PATCH(
     details: { name: updated.name },
   });
 
-  return NextResponse.json(updated);
+  const clientFields = ["name"] as const;
+  return NextResponse.json({
+    ...updated,
+    client: updated.client ? decryptSensitive(updated.client as Record<string, unknown>, clientFields) as typeof updated.client : null,
+  });
 }
 
 export async function DELETE(

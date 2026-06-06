@@ -11,12 +11,21 @@ interface Client {
   name: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+  code: string | null;
+  client: { id: string; name: string } | null;
+}
+
 export default function NewInvoicePage() {
   const { dict, lang } = useLanguage();
   const locale = lang === "en" ? "en-US" : "ar-SA";
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [clientId, setClientId] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [type, setType] = useState<"CASH" | "CREDIT">("CASH");
   const [items, setItems] = useState([{ name: "", quantity: 1, unitPrice: 0 }]);
   const [discount, setDiscount] = useState(0);
@@ -24,11 +33,17 @@ export default function NewInvoicePage() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
-    fetch("/api/clients")
-      .then((r) => r.json())
-      .then(setClients)
+    Promise.all([
+      fetch("/api/clients").then((r) => r.json()),
+      fetch("/api/projects").then((r) => r.json()),
+    ])
+      .then(([clientsData, projectsData]) => {
+        setClients(Array.isArray(clientsData) ? clientsData : []);
+        setProjects(Array.isArray(projectsData) ? projectsData : []);
+      })
       .catch(() => {});
   }, []);
 
@@ -51,6 +66,35 @@ export default function NewInvoicePage() {
     setItems(updated);
   }
 
+  async function handleFetchBoq() {
+    if (!projectId) {
+      setError("يرجى اختيار مشروع أولاً");
+      return;
+    }
+    setFetching(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/projects/${projectId}/boq`);
+      if (!res.ok) throw new Error("فشل جلب البيانات");
+      const boqItems = await res.json();
+      if (!Array.isArray(boqItems) || boqItems.length === 0) {
+        setError("لا توجد بنود في جدول الكميات للمشروع المحدد");
+        return;
+      }
+      setItems(
+        boqItems.map((b: { description: string; code: string | null; quantity: number; unitPrice: number }) => ({
+          name: b.code ? `[${b.code}] ${b.description}` : b.description,
+          quantity: Number(b.quantity),
+          unitPrice: Number(b.unitPrice),
+        }))
+      );
+    } catch {
+      setError("فشل جلب البيانات من المشروع");
+    } finally {
+      setFetching(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -70,6 +114,7 @@ export default function NewInvoicePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           clientId,
+          projectId: projectId || undefined,
           type,
           items: validItems.map((i) => ({
             name: i.name,
@@ -86,16 +131,21 @@ export default function NewInvoicePage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? dict.common.error);
+        let errorMsg = dict.common.error;
+        try {
+          const data = await res.json();
+          errorMsg = data.error ?? dict.common.error;
+        } catch {}
+        setError(errorMsg);
         return;
       }
 
       const invoice = await res.json();
       router.push(`/dashboard/invoices/${invoice.id}`);
       router.refresh();
-    } catch {
-      setError(dict.common.networkError);
+    } catch (err) {
+      console.error("Invoice create error:", err);
+      setError(err instanceof Error ? err.message : dict.common.networkError);
     } finally {
       setLoading(false);
     }
@@ -123,6 +173,24 @@ export default function NewInvoicePage() {
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
+              <label className="block text-sm font-semibold text-[#0d2818] mb-2">{dict.projects.heading}</label>
+              <select
+                value={projectId}
+                onChange={(e) => {
+                  const pid = e.target.value;
+                  setProjectId(pid);
+                  const project = projects.find((p) => p.id === pid);
+                  if (project?.client) setClientId(project.client.id);
+                }}
+                className={inputCls}
+              >
+                <option value="">{dict.invoices.new.selectClient}</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.code ? `${p.code} — ` : ""}{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-semibold text-[#0d2818] mb-2">{dict.invoices.new.client}</label>
               <select
                 value={clientId}
@@ -142,6 +210,8 @@ export default function NewInvoicePage() {
                 </p>
               )}
             </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-[#0d2818] mb-2">{dict.invoices.new.invoiceType}</label>
               <select
@@ -152,6 +222,21 @@ export default function NewInvoicePage() {
                 <option value="CASH">{dict.invoices.type.cash}</option>
                 <option value="CREDIT">{dict.invoices.type.credit}</option>
               </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={handleFetchBoq}
+                disabled={fetching || !projectId}
+                className="w-full bg-[#1a5632] text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-[#2d8a4e] transition-all shadow-lg shadow-[#1a5632]/20 disabled:opacity-50"
+              >
+                {fetching ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
+                    جاري الجلب...
+                  </span>
+                ) : "جلب البيانات"}
+              </button>
             </div>
           </div>
         </div>

@@ -9,6 +9,14 @@ export default function NewProjectPage() {
   const router = useRouter();
   const { dict } = useLanguage();
 
+  if (!dict?.projects?.new) {
+    return (
+      <div className="max-w-3xl mx-auto min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#1a5632]/20 border-t-[#1a5632] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
@@ -61,14 +69,14 @@ export default function NewProjectPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? dict.common.error);
+        setError(data.error ?? dict?.common?.error ?? "حدث خطأ");
         return;
       }
 
       router.push("/dashboard/projects");
       router.refresh();
     } catch {
-      setError(dict.common.networkError);
+      setError(dict?.common?.networkError ?? "حدث خطأ في الشبكة");
     } finally {
       setLoading(false);
     }

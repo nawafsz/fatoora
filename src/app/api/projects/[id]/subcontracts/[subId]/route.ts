@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { csrfGuard, apiAuthGuard } from "@/lib/security";
+import { decryptSensitive } from "@/lib/encryption";
 import { auditLog } from "@/lib/audit";
+
+const SUBCONTRACTOR_FIELDS = ["name", "phone", "taxNumber"] as const;
 
 export async function GET(
   _req: Request,
@@ -28,7 +31,14 @@ export async function GET(
   });
   if (!sub) return NextResponse.json({ error: "عقد الباطن غير موجود" }, { status: 404 });
 
-  return NextResponse.json(sub);
+  const decrypted = {
+    ...sub,
+    subcontractor: sub.subcontractor
+      ? decryptSensitive(sub.subcontractor as Record<string, unknown>, SUBCONTRACTOR_FIELDS) as typeof sub.subcontractor
+      : sub.subcontractor,
+  };
+
+  return NextResponse.json(decrypted);
 }
 
 export async function PATCH(

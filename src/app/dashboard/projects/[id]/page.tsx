@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { formatSar } from "@/lib/utils";
 import { getTranslations } from "@/lib/i18n";
+import { decryptSensitive } from "@/lib/encryption";
 import { ProjectClient } from "./project-client";
 
 const statusColors: Record<string, string> = {
@@ -49,7 +50,19 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound();
 
-  const serialized = JSON.parse(JSON.stringify(project));
+  const clientFields = ["name", "phone"] as const;
+  const decryptedClient = project.client
+    ? decryptSensitive(project.client as Record<string, unknown>, clientFields) as typeof project.client
+    : null;
+  const subcontractsDecrypted = project.subcontracts.map((s) => ({
+    ...s,
+    subcontractor: s.subcontractor
+      ? decryptSensitive(s.subcontractor as Record<string, unknown>, ["name"] as const) as typeof s.subcontractor
+      : s.subcontractor,
+  }));
+  const projectDecrypted = { ...project, client: decryptedClient, subcontracts: subcontractsDecrypted };
+
+  const serialized = JSON.parse(JSON.stringify(projectDecrypted));
 
   const lang = settings?.language ?? "ar";
   const dict = await getTranslations(lang);
@@ -154,9 +167,9 @@ export default async function ProjectDetailPage({
             <dl className="space-y-3 text-sm">
               <div>
                 <dt className="text-gray-400 mb-1">{dict.projects.table.client}</dt>
-                <dd className="font-semibold text-[#0d2818]">{project.client.name}</dd>
+                <dd className="font-semibold text-[#0d2818]">{projectDecrypted.client?.name}</dd>
               </div>
-              {project.client.taxNumber && (
+              {projectDecrypted.client?.taxNumber && (
                 <div>
                   <dt className="text-gray-400 mb-1">الرقم الضريبي</dt>
                   <dd className="font-semibold text-[#0d2818] font-mono" dir="ltr">{project.client.taxNumber}</dd>

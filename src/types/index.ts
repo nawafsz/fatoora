@@ -13,29 +13,44 @@ export interface InvoiceItem {
   total: number;
 }
 
+export interface ZatcaLineItem {
+  lineItemName: string;
+  lineItemPrice: number;
+  lineItemQty: number;
+  vatRateOnLineItem: number;
+}
+
 export interface ZatcaInvoiceRequest {
-  invoiceNumber: string;
-  issueDate: string;
-  invoiceType: InvoiceType;
+  documentType: string;
+  invoiceIndicator: string;
+  currency: string;
   supplier: {
-    name: string;
-    taxNumber: string;
+    supplierName: string;
+    supplierVatId: string;
+    supplierAddress?: {
+      streetName?: string;
+      buildingNumber?: string;
+      cityName?: string;
+      postalZone?: string;
+      country?: string;
+      neighborhood?: string;
+      citySubdivisionName?: string;
+      plotIdentification?: string;
+      additionalStreetName?: string;
+    };
   };
-  customer: {
-    name: string;
-    taxNumber?: string;
+  buyer: {
+    buyerName: string;
+    buyerVatId: string;
   };
-  items: InvoiceItem[];
-  total: number;
-  taxAmount: number;
-  totalWithTax: number;
+  documentLineItems: ZatcaLineItem[];
 }
 
 export interface ZatcaResponse {
   uuid: string;
   status: string;
   qrCode: string;
-  signedXml: string;
+  signedXml?: string;
 }
 
 declare module "next-auth" {

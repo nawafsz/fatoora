@@ -5,6 +5,8 @@ import { checkRateLimit } from "@/lib/utils";
 import { csrfGuard, apiAuthGuard } from "@/lib/security";
 import { updateSettingsSchema } from "@/lib/validation";
 import { auditLog } from "@/lib/audit";
+import { encrypt, decrypt } from "@/lib/encryption";
+import { clearTokenCache } from "@/lib/zatca";
 
 export async function GET(_req: Request) {
   const session = await auth();
@@ -42,17 +44,35 @@ export async function GET(_req: Request) {
     userId: session!.user!.id, action: "read", resource: "settings",
   });
 
+  let avtaxClientId = "";
+  let avtaxClientSecret = "";
+  if (user.zatcaConfig?.avtaxClientId) {
+    try { avtaxClientId = decrypt(user.zatcaConfig.avtaxClientId); } catch {}
+  }
+  if (user.zatcaConfig?.avtaxClientSecret) {
+    try { avtaxClientSecret = decrypt(user.zatcaConfig.avtaxClientSecret); } catch {}
+  }
+
   return NextResponse.json({
     companyName: user.companyName ?? "",
     taxNumber: user.taxNumber ?? "",
     commercialReg: user.commercialReg ?? "",
     city: user.city ?? "",
+    street: user.street ?? "",
+    buildingNumber: user.buildingNumber ?? "",
+    neighborhood: user.neighborhood ?? "",
+    postalCode: user.postalCode ?? "",
+    additionalNumber: user.additionalNumber ?? "",
     plan: user.plan,
     totpEnabled: user.totpEnabled,
     invoicePrefix: user.settings?.invoicePrefix ?? "INV-",
     defaultTaxRate: Number(user.settings?.defaultTaxRate ?? 15),
     language: user.settings?.language ?? "ar",
     zatcaEnv: user.zatcaConfig?.environment ?? "sandbox",
+    avtaxClientId,
+    avtaxClientSecret,
+    deviceSerialNumber: user.zatcaConfig?.deviceSerialNumber ?? "",
+    complianceStatus: user.zatcaConfig?.complianceStatus ?? "pending",
   });
 }
 
@@ -88,11 +108,11 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? invalidDataMsg[lang] }, { status: 400 });
   }
 
-  const { companyName, taxNumber, commercialReg, city, invoicePrefix, defaultTaxRate, language, zatcaEnv } = parsed.data;
+  const { companyName, taxNumber, commercialReg, city, street, buildingNumber, neighborhood, postalCode, additionalNumber, invoicePrefix, defaultTaxRate, language, zatcaEnv, avtaxClientId, avtaxClientSecret, deviceSerialNumber } = parsed.data;
 
   await db.user.update({
     where: { id: session!.user!.id },
-    data: { companyName, taxNumber, commercialReg, city },
+    data: { companyName, taxNumber, commercialReg, city, street, buildingNumber, neighborhood, postalCode, additionalNumber },
   });
 
   await db.settings.upsert({
@@ -110,18 +130,33 @@ export async function PUT(req: Request) {
     },
   });
 
+  const zatcaData: Record<string, unknown> = {};
+  if (zatcaEnv) zatcaData.environment = zatcaEnv;
+  if (avtaxClientId !== undefined) {
+    zatcaData.avtaxClientId = avtaxClientId ? encrypt(avtaxClientId) : null;
+  }
+  if (avtaxClientSecret !== undefined) {
+    zatcaData.avtaxClientSecret = avtaxClientSecret ? encrypt(avtaxClientSecret) : null;
+  }
+  if (deviceSerialNumber !== undefined) {
+    zatcaData.deviceSerialNumber = deviceSerialNumber || null;
+  }
+
   const existingZatca = await db.zatcaConfig.findUnique({ where: { userId: session!.user!.id } });
 
   if (existingZatca) {
     await db.zatcaConfig.update({
       where: { userId: session!.user!.id },
-      data: { environment: zatcaEnv ?? "sandbox" },
+      data: zatcaData as any,
     });
-  } else if (zatcaEnv) {
+  } else if (Object.keys(zatcaData).length > 0) {
     await db.zatcaConfig.create({
-      data: { userId: session!.user!.id, environment: zatcaEnv },
+      data: { userId: session!.user!.id, ...zatcaData } as any,
     });
   }
+
+  // مسح التوكن المخبؤ عند تغيير الإعدادات
+  clearTokenCache(session!.user!.id);
 
   await auditLog({
     userId: session!.user!.id,

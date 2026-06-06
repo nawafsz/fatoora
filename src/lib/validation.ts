@@ -30,6 +30,7 @@ export const createInvoiceSchema = z.object({
   dueDate: z.string().optional(),
   items: invoiceItemArraySchema,
   notes: z.string().max(1000).optional(),
+  projectId: z.string().optional(),
 });
 
 export const updateInvoiceSchema = z.object({
@@ -62,10 +63,18 @@ export const updateSettingsSchema = z.object({
   taxNumber: z.string().regex(/^\d{15}$/).optional().or(z.literal("")),
   commercialReg: z.string().max(50).optional().or(z.literal("")),
   city: z.string().max(100).optional().or(z.literal("")),
+  street: z.string().max(200).optional().or(z.literal("")),
+  buildingNumber: z.string().max(50).optional().or(z.literal("")),
+  neighborhood: z.string().max(100).optional().or(z.literal("")),
+  postalCode: z.string().max(50).optional().or(z.literal("")),
+  additionalNumber: z.string().max(50).optional().or(z.literal("")),
   invoicePrefix: z.string().max(20).optional(),
   defaultTaxRate: z.preprocess((v) => (typeof v === "string" ? Number(v) : v), z.number().min(0).max(100)).optional(),
   language: z.enum(["ar", "en"]).optional(),
   zatcaEnv: z.enum(["sandbox", "production"]).optional(),
+  avtaxClientId: z.string().max(500).optional(),
+  avtaxClientSecret: z.string().max(500).optional(),
+  deviceSerialNumber: z.string().max(100).optional(),
 });
 
 export const forgotPasswordSchema = z.object({

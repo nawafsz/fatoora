@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { ar, en } from "@/lib/i18n/dictionaries";
 import type { Dict } from "@/lib/i18n";
 
 type Lang = "ar" | "en";
@@ -12,17 +13,14 @@ type LangContext = {
   dir: "rtl" | "ltr";
 };
 
+const defaultDict: Dict = ar;
+
 const Ctx = createContext<LangContext>({
   lang: "ar",
-  dict: {} as Dict,
+  dict: defaultDict,
   setLang: async () => {},
   dir: "rtl",
 });
-
-async function loadDict(lang: Lang): Promise<Dict> {
-  const { ar, en } = await import("@/lib/i18n/dictionaries");
-  return lang === "en" ? en : ar;
-}
 
 export function LanguageProvider({
   children,
@@ -32,13 +30,7 @@ export function LanguageProvider({
   initialLang: Lang;
 }) {
   const [lang, setLangState] = useState<Lang>(initialLang);
-  const [dict, setDict] = useState<Dict>({} as Dict);
-
-  useEffect(() => {
-    loadDict(lang).then(setDict);
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-  }, [lang]);
+  const [dict, setDict] = useState<Dict>(initialLang === "en" ? en : ar);
 
   const setLang = useCallback(async (l: Lang) => {
     await fetch("/api/settings/lang", {
@@ -48,6 +40,7 @@ export function LanguageProvider({
     });
     document.cookie = `lang=${l};path=/;max-age=31536000`;
     setLangState(l);
+    setDict(l === "en" ? en : ar);
   }, []);
 
   return (

@@ -3,6 +3,10 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "@/lib/i18n";
+import { decryptSensitive } from "@/lib/encryption";
+import { DeleteSubcontractButton } from "./delete-button";
+
+const SUBCONTRACTOR_FIELDS = ["name", "phone", "taxNumber"] as const;
 
 export default async function SubcontractDetailPage({
   params,
@@ -28,6 +32,8 @@ export default async function SubcontractDetailPage({
 
   if (!sub) notFound();
 
+  sub.subcontractor = decryptSensitive(sub.subcontractor as Record<string, unknown>, SUBCONTRACTOR_FIELDS) as typeof sub.subcontractor;
+
   const lang = settings?.language ?? "ar";
   const dict = await getTranslations(lang);
 
@@ -50,6 +56,7 @@ export default async function SubcontractDetailPage({
           <Link href={`/dashboard/projects/${id}/subcontracts/${subId}/edit`} className="flex items-center gap-2 bg-white border-2 border-[#1a5632] text-[#1a5632] px-5 py-3 rounded-xl text-sm font-bold hover:bg-[#1a5632] hover:text-white transition-all">
             {dict.common.edit}
           </Link>
+          <DeleteSubcontractButton projectId={id} subId={subId} />
         </div>
       </div>
 
@@ -71,7 +78,7 @@ export default async function SubcontractDetailPage({
       <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
         <h3 className="text-sm font-black text-[#0d2818] mb-4">{dict.projects.subcontracts.claims}</h3>
         {sub.claims.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-8">{dict.projects.claims.notFound}</p>
+          <p className="text-gray-400 text-sm text-center py-8">{dict.projects.subcontracts.noItems}</p>
         ) : (
           <table className="w-full">
             <thead>
@@ -88,7 +95,7 @@ export default async function SubcontractDetailPage({
                   <td className="px-4 py-3 text-sm font-bold text-[#1a5632]">{c.claimNumber}</td>
                   <td className="px-4 py-3 text-sm">{Number(c.completionPct)}%</td>
                   <td className="px-4 py-3 text-sm font-bold">{Number(c.totalDue).toLocaleString("ar-SA")} ر.س</td>
-                  <td className="px-4 py-3 text-sm">{c.status}</td>
+                  <td className="px-4 py-3 text-sm">{(dict.invoices.status as Record<string, string>)[c.status] || c.status}</td>
                 </tr>
               ))}
             </tbody>

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { formatSar } from "@/lib/utils";
 import { getTranslations } from "@/lib/i18n";
+import { decryptSensitive } from "@/lib/encryption";
 
 const statusColors: Record<string, string> = {
   ACTIVE: "bg-emerald-100 text-emerald-700",
@@ -51,6 +52,7 @@ export default async function ProjectsPage() {
         : 0;
     return {
       ...p,
+      client: p.client ? decryptSensitive(p.client as Record<string, unknown>, ["name"] as const) as typeof p.client : p.client,
       totalClaimed,
       totalPaid,
       completionPct: Math.round(completionPct * 10) / 10,

@@ -63,6 +63,19 @@ async function main() {
     },
   });
 
+  await prisma.settings.upsert({
+    where: { userId: admin.id },
+    update: {},
+    create: {
+      userId: admin.id,
+      invoicePrefix: "INV-",
+      defaultTaxRate: 15,
+      nextNumber: 1,
+      language: "ar",
+      currency: "SAR",
+    },
+  });
+
   console.log("✅ Settings created");
 
   await prisma.zatcaConfig.upsert({
@@ -70,6 +83,16 @@ async function main() {
     update: {},
     create: {
       userId: demo.id,
+      environment: "sandbox",
+      complianceStatus: "pending",
+    },
+  });
+
+  await prisma.zatcaConfig.upsert({
+    where: { userId: admin.id },
+    update: {},
+    create: {
+      userId: admin.id,
       environment: "sandbox",
       complianceStatus: "pending",
     },
