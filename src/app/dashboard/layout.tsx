@@ -7,8 +7,10 @@ import { getTranslations } from "@/lib/i18n";
 
 const navLinks = [
   { href: "/dashboard", key: "home", icon: "⊞" },
+  { href: "/dashboard/projects", key: "projects", icon: "🏗️" },
   { href: "/dashboard/invoices", key: "invoices", icon: "📄" },
   { href: "/dashboard/clients", key: "clients", icon: "👥" },
+  { href: "/dashboard/workers", key: "workers", icon: "👷" },
   { href: "/dashboard/billing", key: "plans", icon: "💎" },
   { href: "/dashboard/support", key: "support", icon: "🛟" },
   { href: "/dashboard/settings", key: "settings", icon: "⚙️" },

@@ -20,6 +20,21 @@ enum InvoiceStatus {
   REPORTED
 }
 
+enum ProjectStatus {
+  ACTIVE      // نشط
+  ON_HOLD     // متوقف مؤقتاً
+  COMPLETED   // مكتمل
+  CANCELLED   // ملغي
+}
+
+enum ClaimStatus {
+  DRAFT       // مسودة
+  SUBMITTED   // مقدّم
+  APPROVED    // معتمد
+  REJECTED    // مرفوض
+  PAID        // مدفوع
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String
@@ -54,6 +69,8 @@ model User {
   subscriptions Subscription[]
   payments       Payment[]
   tickets        Ticket[]
+  projects       Project[]
+  workers        Worker[]
 }
 
 model Subscription {
@@ -140,8 +157,10 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invoices Invoice[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices      Invoice[]
+  subcontracts  Subcontract[] // عقود الباطن حيث هذا العميل هو مقاول الباطن
+  projects      Project[]     // المشاريع التي هذا العميل هو صاحب العمل فيها
 }
 
 model Invoice {
@@ -164,15 +183,19 @@ model Invoice {
   zatcaResponse  Json?
   userId         String
   clientId       String
+  projectId      String?       // ربط اختياري بمشروع مقاولات
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client Client @relation(fields: [clientId], references: [id])
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client        Client        @relation(fields: [clientId], references: [id])
+  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  progressClaim ProgressClaim? // مستخلص مرتبط بهذه الفاتورة
 
   @@index([userId])
   @@index([clientId])
   @@index([invoiceNumber])
+  @@index([projectId])
 }
 
 model Settings {
@@ -207,4 +230,220 @@ model Ticket {
 
   @@index([userId])
   @@index([status])
+}
+
+// ==========================================
+// 🏗️ وحدة المقاولات - Construction Module
+// ==========================================
+
+model Project {
+  id              String        @id @default(cuid())
+  name            String        // اسم المشروع
+  code            String?       // رمز المشروع الداخلي
+  description     String?
+  location        String?       // موقع المشروع
+  contractValue   Decimal       @db.Decimal(14, 2) // قيمة العقد الإجمالية
+  advancePayment  Decimal       @default(0) @db.Decimal(14, 2) // الدفعة المقدمة
+  retentionRate   Decimal       @default(10) @db.Decimal(5, 2) // نسبة استقطاع الضمان %
+  taxRate         Decimal       @default(15) @db.Decimal(5, 2) // نسبة الضريبة %
+  startDate       DateTime?
+  endDate         DateTime?
+  status          ProjectStatus @default(ACTIVE)
+  notes           String?
+  userId          String
+  clientId        String        // صاحب العمل / الجهة المالكة
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client          Client        @relation(fields: [clientId], references: [id])
+  invoices        Invoice[]     // فواتير ZATCA المرتبطة
+  progressClaims  ProgressClaim[] // المستخلصات
+  subcontracts    Subcontract[] // عقود مقاولي الباطن
+  boqItems        BOQItem[]     // بنود جدول الكميات
+  projectWorkers  ProjectWorker[]
+  attendanceRecords AttendanceRecord[]
+
+  @@index([userId])
+  @@index([clientId])
+  @@index([status])
+}
+
+model ProgressClaim {
+  id                String      @id @default(cuid())
+  claimNumber       Int         // رقم المستخلص (1، 2، 3...)
+  projectId         String
+  invoiceId         String?     @unique // فاتورة ZATCA المرتبطة
+  periodStart       DateTime    // بداية فترة الأعمال
+  periodEnd         DateTime    // نهاية فترة الأعمال
+  completionPct     Decimal     @db.Decimal(5, 2) // نسبة الإنجاز الكلية %
+  grossAmount       Decimal     @db.Decimal(14, 2) // إجمالي المستحق قبل الاستقطاعات
+  retentionAmt      Decimal     @default(0) @db.Decimal(14, 2) // استقطاع الضمان
+  advanceDeduct     Decimal     @default(0) @db.Decimal(14, 2) // خصم الدفعة المقدمة
+  previousClaims    Decimal     @default(0) @db.Decimal(14, 2) // مجموع المستخلصات السابقة
+  netCurrent        Decimal     @db.Decimal(14, 2) // المستحق الصافي الحالي
+  vatAmount         Decimal     @db.Decimal(14, 2) // ضريبة القيمة المضافة
+  totalDue          Decimal     @db.Decimal(14, 2) // الإجمالي مع الضريبة
+  status            ClaimStatus @default(DRAFT)
+  notes             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  project           Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoice           Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  boqSnapshots      ClaimBOQItem[] // بنود الكميات في هذا المستخلص
+
+  @@index([projectId])
+  @@index([status])
+  @@unique([projectId, claimNumber])
+}
+
+model Subcontract {
+  id              String      @id @default(cuid())
+  projectId       String
+  subcontractorId String      // مقاول الباطن (من جدول Client)
+  scope           String      // نطاق العمل (كهرباء / سباكة / تشطيب / عمالة)
+  contractValue   Decimal     @db.Decimal(14, 2) // قيمة عقد الباطن
+  retentionRate   Decimal     @default(10) @db.Decimal(5, 2)
+  advancePayment  Decimal     @default(0) @db.Decimal(14, 2)
+  startDate       DateTime?
+  endDate         DateTime?
+  status          String      @default("active")
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subcontractor   Client          @relation(fields: [subcontractorId], references: [id])
+  claims          SubcontractClaim[] // مستخلصات الباطن
+
+  @@index([projectId])
+  @@index([subcontractorId])
+}
+
+model SubcontractClaim {
+  id              String      @id @default(cuid())
+  subcontractId   String
+  claimNumber     Int         // رقم المستخلص (1، 2، 3...)
+  periodStart     DateTime    // بداية فترة الأعمال
+  periodEnd       DateTime    // نهاية فترة الأعمال
+  completionPct   Decimal     @db.Decimal(5, 2)  // نسبة الإنجاز %
+  grossAmount     Decimal     @db.Decimal(14, 2) // إجمالي المستحق
+  retentionAmt    Decimal     @default(0) @db.Decimal(14, 2)
+  netAmount       Decimal     @db.Decimal(14, 2) // الصافي
+  vatAmount       Decimal     @default(0) @db.Decimal(14, 2)
+  totalDue        Decimal     @db.Decimal(14, 2) // الإجمالي مع الضريبة
+  status          ClaimStatus @default(DRAFT)
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  subcontract     Subcontract @relation(fields: [subcontractId], references: [id], onDelete: Cascade)
+
+  @@index([subcontractId])
+  @@unique([subcontractId, claimNumber])
+}
+
+model BOQItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  code        String?  // رمز البند
+  description String   // وصف العمل
+  unit        String   @default("م2") // وحدة القياس
+  quantity    Decimal  @db.Decimal(12, 3) // الكمية في العقد
+  unitPrice   Decimal  @db.Decimal(12, 2) // سعر الوحدة
+  totalPrice  Decimal  @db.Decimal(14, 2) // الإجمالي
+  category    String?  // التصنيف (مدني، كهرباء، ميكانيكا، تشطيبات)
+  sortOrder   Int      @default(0)
+
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  claimItems  ClaimBOQItem[]
+
+  @@index([projectId])
+}
+
+// ==========================================
+// 👷 إدارة العمالة - Labor Management
+// ==========================================
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  OVERTIME
+  VACATION
+}
+
+model Worker {
+  id            String      @id @default(cuid())
+  name          String
+  iqamaNumber   String?     // رقم الإقامة
+  iqamaExpiry   DateTime?   // تاريخ انتهاء الإقامة
+  nationality   String?     // الجنسية
+  jobTitle      String?     // المسمى الوظيفي
+  phone         String?     // رقم الجوال
+  dailyRate     Decimal     @default(0) @db.Decimal(10, 2) // الأجر اليومي
+  notes         String?
+  active        Boolean     @default(true)
+  userId        String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments   ProjectWorker[]
+  attendance    AttendanceRecord[]
+
+  @@index([userId])
+  @@index([active])
+}
+
+model ProjectWorker {
+  id        String   @id @default(cuid())
+  projectId String
+  workerId   String
+  dailyRate  Decimal? @db.Decimal(10, 2) // أجر خاص بالمشروع (يختلف عن الأساسي)
+  startDate DateTime?
+  endDate   DateTime?
+  active    Boolean  @default(true)
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, workerId])
+  @@index([projectId])
+  @@index([workerId])
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  workerId    String
+  projectId   String
+  date        DateTime         // التاريخ
+  status      AttendanceStatus @default(PRESENT)
+  hoursExtra  Decimal?         @default(0) @db.Decimal(4, 2) // ساعات إضافية
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  worker      Worker           @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([workerId, projectId, date])
+  @@index([projectId, date])
+}
+
+model ClaimBOQItem {
+  id            String        @id @default(cuid())
+  claimId       String
+  boqItemId     String
+  qtyThisClaim  Decimal       @db.Decimal(12, 3) // الكمية في هذا المستخلص
+  qtyCumulative Decimal       @db.Decimal(12, 3) // الكمية التراكمية حتى الآن
+  pctComplete   Decimal       @db.Decimal(5, 2)  // نسبة الإنجاز %
+  amountClaimed Decimal       @db.Decimal(14, 2) // المبلغ المطالب به
+
+  claim         ProgressClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  boqItem       BOQItem       @relation(fields: [boqItemId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([boqItemId])
 }

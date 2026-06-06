@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const dict = await getTranslations(settings?.language ?? "ar");
   const locale = settings?.language === "en" ? "en-US" : "ar-SA";
 
-  const [invoiceCount, clientCount, totalRevenue, pendingInvoices] = await Promise.all([
+  const [invoiceCount, clientCount, totalRevenue, pendingInvoices, projectCount, activeProjectCount] = await Promise.all([
     db.invoice.count({
       where: {
         userId,
@@ -30,6 +30,8 @@ export default async function DashboardPage() {
       _sum: { total: true },
     }),
     db.invoice.count({ where: { userId, status: "DRAFT" } }),
+    db.project.count({ where: { userId } }),
+    db.project.count({ where: { userId, status: "ACTIVE" } }),
   ]);
 
   const planKey = (session?.user?.plan ?? "free") as string;
@@ -43,6 +45,14 @@ export default async function DashboardPage() {
       color: "from-violet-50 to-purple-50",
       border: "border-violet-100",
       textColor: "text-violet-700",
+    },
+    {
+      label: dict.dashboard.home.projects,
+      value: `${activeProjectCount.toLocaleString(locale)} / ${projectCount.toLocaleString(locale)}`,
+      icon: "🏗️",
+      color: "from-orange-50 to-amber-50",
+      border: "border-orange-100",
+      textColor: "text-orange-700",
     },
     {
       label: dict.dashboard.home.invoicesThisMonth,
@@ -81,6 +91,17 @@ export default async function DashboardPage() {
       descText: "text-green-100",
     },
     {
+      href: "/dashboard/projects",
+      icon: "🏗️",
+      title: dict.dashboard.home.manageProjects ?? "المشاريع",
+      desc: activeProjectCount > 0
+        ? `${activeProjectCount.toLocaleString(locale)} مشروع نشط`
+        : "إدارة مشاريع المقاولات",
+      bg: "bg-white",
+      text: "text-[#0d2818]",
+      descText: "text-gray-400",
+    },
+    {
       href: "/dashboard/clients",
       icon: "👤",
       title: dict.dashboard.home.manageClients.title,
@@ -95,8 +116,8 @@ export default async function DashboardPage() {
       title: dict.dashboard.home.allInvoices.title,
       desc:
         pendingInvoices > 0
-          ? `${pendingInvoices.toLocaleString(locale)} ${dict.dashboard.home.allInvoices.desc}`
-          : dict.dashboard.home.allInvoices.desc,
+          ? `${pendingInvoices.toLocaleString(locale)} ${dict.dashboard.home.draftInvoiceUnit}`
+          : dict.dashboard.home.trackInvoices,
       bg: "bg-white",
       text: "text-[#0d2818]",
       descText: "text-gray-400",
@@ -137,7 +158,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {stats.map((stat, i) => (
           <div
             key={i}
@@ -171,7 +192,7 @@ export default async function DashboardPage() {
       {/* Quick Actions */}
       <div>
         <h2 className="text-lg font-bold text-[#0d2818] mb-4">{dict.dashboard.home.quickActions}</h2>
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-5 gap-4">
           {quickActions.map((action, i) => (
             <Link
               key={i}

@@ -11,7 +11,8 @@ type AuditAction =
 
 type AuditResource =
   | "invoice" | "client" | "user" | "settings"
-  | "subscription" | "whatsapp" | "auth" | "webhook";
+  | "subscription" | "whatsapp" | "auth" | "webhook"
+  | "project";
 
 export async function auditLog(params: {
   userId?: string | null;
